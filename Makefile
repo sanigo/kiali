@@ -45,10 +45,19 @@ NAMESPACE ?= istio-system
 GOPATH ?= ${HOME}/go
 
 # Environment variables set when running the Go compiler.
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
 GO_BUILD_ENVVARS = \
-	GOOS=linux \
-	GOARCH=amd64 \
+	GOOS=$(GOOS) \
+	GOARCH=$(GOARCH) \
 	CGO_ENABLED=0 \
+
+# Environment variables to shift between base images.
+ifeq ($(GOARCH),amd64)
+KIALI_DOCKER_FILE ?= Dockerfile-ubi7-minimal
+else
+KIALI_DOCKER_FILE ?= Dockerfile-ubi8-minimal
+endif
 
 .PHONY: help
 all: help
@@ -201,7 +210,7 @@ swagger-travis: swagger-validate
 ## docker-build-kiali: Build Kiali container image into local docker daemon.
 docker-build-kiali: .prepare-docker-image-files
 	@echo Building container image for Kiali into local docker daemon...
-	docker build --pull -t ${DOCKER_TAG} _output/docker
+	docker build --pull -f _output/docker/${KIALI_DOCKER_FILE} -t ${DOCKER_TAG} _output/docker
 	docker tag ${DOCKER_TAG} ${QUAY_TAG}
 
 ## docker-build-operator: Build Kiali operator container image into local docker daemon.
